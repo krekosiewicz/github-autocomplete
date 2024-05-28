@@ -11,3 +11,19 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+/* src/App.css */
+body {
+  font-family: 'Roboto', sans-serif;
+}
+
+#root {
+  padding: 20px;
+}
+
+.MuiListItem-root {
+  cursor: pointer;
+}
+
+.MuiListItem-root.Mui-selected {
+  background-color: rgba(0, 0, 0, 0.08);
+}
