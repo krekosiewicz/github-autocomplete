@@ -1,7 +1,7 @@
-# Use an official Node runtime as a parent image
+# Stage 1: Build the React application
 FROM node:18-alpine as builder
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /usr/src/app
 
 # Copy package.json and package-lock.json (or yarn.lock)
@@ -10,26 +10,23 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install --frozen-lockfile
 
-# Bundle app source
+# Copy the rest of the application code
 COPY . .
 
-# Build your app
+# Build the React application
 RUN npm run build
 
-# Start a new stage from scratch
-FROM node:18-alpine as runner
+# Stage 2: Serve the application using Nginx
+FROM nginx:alpine
 
-WORKDIR /usr/src/app
+# Copy the build output to the Nginx HTML directory
+COPY --from=builder /usr/src/app/build /usr/share/nginx/html
 
-# Copy the built assets from the builder stage
-COPY --from=builder /usr/src/app/.next .next
-COPY --from=builder /usr/src/app/node_modules node_modules
-COPY --from=builder /usr/src/app/public public
-COPY --from=builder /usr/src/app/package.json package.json
+# Copy custom Nginx configuration if necessary
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Set a non-root user and switch to it
-RUN adduser -D myuser
-USER myuser
+# Expose the port Nginx will serve on
+EXPOSE 80
 
-# The command to run your app
-CMD ["npm", "start"]
+# Command to run Nginx
+CMD ["nginx", "-g", "daemon off;"]
