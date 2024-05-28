@@ -31,6 +31,6 @@ services:
     volumes:
       - ./data/certbot/conf:/etc/letsencrypt
       - ./data/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'if [ ! -d /etc/letsencrypt/live/${DOMAIN_NAME} ]; then certbot certonly --webroot --webroot-path=/var/www/certbot --email ${NODEMAILER_EMAIL} --agree-tos --no-eff-email --domain ${DOMAIN_NAME} -v; fi; trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    entrypoint: "/bin/sh -c 'if [ ! -d /etc/letsencrypt/live/${DOMAIN_NAME} ]; then certbot certonly --webroot --webroot-path=/var/www/certbot --email ${REGISTER_EMAIL} --agree-tos --no-eff-email --domain ${DOMAIN_NAME} -v; fi; trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     depends_on:
       - nginx
