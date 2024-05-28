@@ -1,9 +1,9 @@
 import { useEffect, useReducer } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import usePrevious from './usePrevious.hook'; // Adjust this path as needed
 
 export type FilterValues = {
   Q: string;
-  urlState?: string;
   filterValue?: '#user:' | '#repository:' | '';
 }
 
@@ -18,9 +18,11 @@ function filterReducer(state: FilterValues, action: { type: string; field: strin
   }
 }
 
-export const useDebounceFilter = (initialFilterValues: FilterValues, debounceDelay = 300) => {
+export const useDebounceFilter = (initialFilterValues: FilterValues, debounceDelay = 2000) => {
   const [filterValues, dispatch] = useReducer(filterReducer, initialFilterValues);
   const prevFilterValues = usePrevious(filterValues);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const hasChanged = filterValues && prevFilterValues &&
@@ -28,19 +30,19 @@ export const useDebounceFilter = (initialFilterValues: FilterValues, debounceDel
 
     if (hasChanged) {
       const timeoutId = setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('q', filterValues.Q);
+        const params = new URLSearchParams(location.search);
+        params.set('q', filterValues.Q);
         if (filterValues.filterValue) {
-          url.searchParams.set('filter', filterValues.filterValue);
+          params.set('filterValue', filterValues.filterValue);
         } else {
-          url.searchParams.delete('filter');
+          params.delete('filterValue');
         }
-        window.history.pushState({}, '', url.toString());
+        navigate({ search: params.toString() }, { replace: true });
       }, debounceDelay);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [filterValues, prevFilterValues, debounceDelay]);
+  }, [filterValues, prevFilterValues, debounceDelay, navigate, location.search]);
 
   return [filterValues, dispatch] as const;
 }

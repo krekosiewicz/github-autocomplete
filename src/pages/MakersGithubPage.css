@@ -1,0 +1,4 @@
+.bg-3d-grid {
+    background-image: url('https://makersden.io/svg/3DGrid.svg');
+    background-size: clamp(700px, 100%, 2000px) clamp(560px, 130%, 1600px);
+}

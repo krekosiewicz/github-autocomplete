@@ -1,3 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+body * {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,13 +25,48 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
-/* src/App.css */
 body {
+  background-color: rgb(17 24 39);
   font-family: 'Roboto', sans-serif;
 }
 
 #root {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+
+.Button_glow-effect {
+  --glow-line-color: #fff;
+  --glow-line-thickness: 1.5px;
+  --glow-line-length: 20px;
+  --glow-blur-color: #fff;
+  --glow-blur-size: 4px;
+  --glow-offset: 0px;
+  --animation-speed: 1200ms;
+  --container-offset: 50px;
+  position: relative;
+}
+
+.border-green-makers-den {
+  --tw-border-opacity: 1;
+  border-color: rgb(109 218 132/var(--tw-border-opacity));
+}
+
+.text-green-makers-den {
+  color: rgb(109 218 132);
+}
+
+.bg-makers-den {
+  --tw-bg-opacity: 1;
+  background-color: rgb(35 40 55/var(--tw-bg-opacity));
+}
+
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(.4,0,.2,1);
+  transition-duration: .15s;
 }
 
 .MuiListItem-root {
