@@ -1,128 +1,39 @@
-import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
-import { CircularProgress, List, ListItem, TextField, Chip, InputAdornment } from '@mui/material';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAtom } from 'jotai';
-import { queryAtom, filterValueAtom } from '../store/atoms';
+import React, { useState, useRef } from 'react';
 import useDebounce from '../hooks/useDebounce';
-import CloseIcon from '../icons/CloseIcon';
-import { MakersDenClipButton } from './makersDenButton'
-
-interface Result {
-  id: number;
-  login?: string;
-  name?: string;
-  html_url: string;
-}
+import CloseIcon from '../icons/closeIcon';
+import { MakersDenClipButton } from './makersDenButton';
+import useApiRequest from '../hooks/useApiRequest';
+import useUrlSearchParams from '../hooks/useUrlSearchParams';
+import { useAtom } from 'jotai';
+import { filterValueAtom, queryAtom } from '../store/atoms';
 
 const Autocomplete: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
   const [query, setQuery] = useAtom(queryAtom);
   const [filterValues, setFilterValues] = useAtom(filterValueAtom);
-  const [results, setResults] = useState<Result[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const listRef = useRef<HTMLUListElement>(null);
-  const initialLoadRef = useRef(true);
 
   const debouncedQuery = useDebounce(query, 500);
+  useUrlSearchParams();
 
-  useEffect(() => {
-    if (initialLoadRef.current) {
-      const params = new URLSearchParams(location.search);
-      const queryParam = params.get('q') || '';
-      const filterParam = params.get('filterValue')?.split(',') || [];
-
-      if (queryParam) {
-        setQuery(queryParam);
-      }
-
-      if (filterParam.length) {
-        setFilterValues(filterParam);
-      }
-
-      initialLoadRef.current = false;
-    }
-  }, [location.search, setQuery, setFilterValues]);
-
-  useEffect(() => {
-    if (debouncedQuery.length < 3) {
-      setResults([]);
-      return;
-    }
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const requests = [];
-        if (filterValues.includes('#user')) {
-          requests.push(axios.get(`https://api.github.com/search/users?q=${debouncedQuery}&per_page=50`));
-        }
-        if (filterValues.includes('#repository')) {
-          requests.push(axios.get(`https://api.github.com/search/repositories?q=${debouncedQuery}&per_page=50`));
-        }
-        if (!filterValues.length) {
-          requests.push(axios.get(`https://api.github.com/search/users?q=${debouncedQuery}&per_page=50`));
-          requests.push(axios.get(`https://api.github.com/search/repositories?q=${debouncedQuery}&per_page=50`));
-        }
-
-        const responses = await Promise.all(requests);
-
-        const combinedResults = responses.flatMap(response => {
-          return response.data.items.map((item: any) => ({
-            id: item.id,
-            login: item.login,
-            name: item.name,
-            html_url: item.html_url,
-          }));
-        });
-
-        combinedResults.sort((a, b) => {
-          const nameA = a.login || a.name || '';
-          const nameB = b.login || b.name || '';
-          return nameA.localeCompare(nameB);
-        });
-
-        setResults(combinedResults);
-      } catch (err) {
-        console.log(err);
-        setError('Failed to fetch results');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [debouncedQuery, filterValues]);
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-    params.set('q', query);
-    if (filterValues.length) {
-      params.set('filterValue', filterValues.join(','));
-    } else {
-      params.delete('filterValue');
-    }
-    navigate({ search: params.toString() }, { replace: true });
-  }, [query, filterValues, navigate]);
+  const { results, loading, error } = useApiRequest(debouncedQuery, filterValues);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const totalResults = userResults.length + repositoryResults.length;
+
     if (event.key === 'ArrowDown') {
-      setSelectedIndex((prevIndex) => Math.min(prevIndex + 1, results.length - 1));
+      setSelectedIndex((prevIndex) => Math.min(prevIndex + 1, totalResults - 1));
       listRef.current?.children[selectedIndex + 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else if (event.key === 'ArrowUp') {
       setSelectedIndex((prevIndex) => Math.max(prevIndex - 1, 0));
       listRef.current?.children[selectedIndex - 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } else if (event.key === 'Enter' && selectedIndex >= 0) {
-      window.open(results[selectedIndex].html_url, '_blank');
+      const allResults = [...userResults, ...repositoryResults];
+      window.open(allResults[selectedIndex].html_url, '_blank');
     }
   };
 
@@ -138,8 +49,11 @@ const Autocomplete: React.FC = () => {
     setFilterValues(prevFilters => prevFilters.filter(f => f !== filter));
   };
 
+  const userResults = results.filter(result => result.login);
+  const repositoryResults = results.filter(result => result.name);
+
   return (
-    <div className="p-4 bg-makers-den  w-[500px]">
+    <div className="p-4 bg-makers-den w-[500px]">
       <div className="mb-4 flex gap-2">
         <MakersDenClipButton
           id="#user"
@@ -154,44 +68,56 @@ const Autocomplete: React.FC = () => {
           isDisabled={filterValues.includes('#repository')}
         />
       </div>
-      <TextField
-        label="Search GitHub"
-        variant="outlined"
-        fullWidth
-        value={query}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              {filterValues.map((filter) => (
-                <Chip
-                  key={filter}
-                  label={filter}
-                  onDelete={() => handleDeleteFilter(filter)}
-                  deleteIcon={<CloseIcon />}
-                />
-              ))}
-            </InputAdornment>
-          ),
-        }}
-        className="mb-4"
-      />
-      {loading && <div>Loading...</div>}
+      <div className="mb-4">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search GitHub"
+            value={query}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none"
+          />
+          <div className="absolute top-1/2 transform -translate-y-1/2 right-4 flex items-center">
+            {filterValues.map((filter) => (
+              <div key={filter} className="flex items-center mr-2 bg-gray-200 px-2 py-1 rounded">
+                <span>{filter}</span>
+                <button
+                  onClick={() => handleDeleteFilter(filter)}
+                  className="ml-1 text-red-500"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {loading && <div className={"bg-white p-4 text-center"}>Loading...</div>}
       {error && <div className="text-red-500">{error}</div>}
       {!loading && !error && results.length === 0 && query.length >= 3 && <div>No results found</div>}
-      <List ref={listRef} className="mt-4">
-        {results.map((result, index) => (
-          <ListItem
+      <ul ref={listRef} className="mt-4 bg-white max-h-[300px] overflow-auto">
+        {userResults.length > 0 && <li className="font-bold p-2">Users</li>}
+        {userResults.map((result, index) => (
+          <li
             key={result.id}
-            selected={index === selectedIndex}
+            className={`cursor-pointer p-2 pl-4 my-2 border-y border-dotted border-gray-300 ${index === selectedIndex ? 'bg-green-400' : ''} hover:bg-green-400`}
             onClick={() => window.open(result.html_url, '_blank')}
-            className="cursor-pointer"
           >
-            {result.login || result.name}
-          </ListItem>
+            {result.login}
+          </li>
         ))}
-      </List>
+        {repositoryResults.length > 0 && <li className="font-bold p-2">Repositories</li>}
+        {repositoryResults.map((result, index) => (
+          <li
+            key={result.id}
+            className={`cursor-pointer p-2 pl-4 my-2 border-y border-dotted border-gray-300 ${index === selectedIndex - userResults.length ? 'bg-green-400' : ''} hover:bg-green-400`}
+            onClick={() => window.open(result.html_url, '_blank')}
+          >
+            {result.name}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };

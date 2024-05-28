@@ -68,11 +68,3 @@ body {
   transition-timing-function: cubic-bezier(.4,0,.2,1);
   transition-duration: .15s;
 }
-
-.MuiListItem-root {
-  cursor: pointer;
-}
-
-.MuiListItem-root.Mui-selected {
-  background-color: rgba(0, 0, 0, 0.08);
-}
