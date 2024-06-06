@@ -18,10 +18,15 @@ const Autocomplete: React.FC = () => {
 
   const { results, loading, error } = useApiRequest(debouncedQuery, filterValues);
 
+
+
+  // usecallback -> not sure
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
   };
 
+
+  //useCallback
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const totalResults = userResults.length + repositoryResults.length;
 
@@ -37,6 +42,8 @@ const Autocomplete: React.FC = () => {
     }
   };
 
+
+  // usecallback
   const handleClipClick = (clip: string) => {
     setFilterValues(prevFilters =>
       prevFilters.includes(clip)
@@ -49,7 +56,10 @@ const Autocomplete: React.FC = () => {
     setFilterValues(prevFilters => prevFilters.filter(f => f !== filter));
   };
 
+
+  //useMemo
   const userResults = results.filter(result => result.login);
+  //useMemo
   const repositoryResults = results.filter(result => result.name);
 
   return (

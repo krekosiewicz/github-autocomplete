@@ -57,6 +57,7 @@ const useApiRequest = (debouncedQuery: string, filterValues: string[]) => {
         const responses = await Promise.all(requests);
 
         const combinedResults = responses.flatMap(response => {
+          // TODO any type
           return response.data.items.map((item: any) => ({
             id: item.id,
             login: item.login,
